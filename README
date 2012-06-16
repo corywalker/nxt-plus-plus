@@ -1,0 +1,34 @@
+
+                      +-----------------------------------+
+                      |	            _____                 |
+                      | |\   | \  /   |      |       |    |
+                      | | \  |  \/    |   ___|___ ___|___ |
+                      | |  \ |  /\    |      |       |    |
+                      | |   \| /  \   |      |       |    |
+                      +-----------------------------------+
+
++-------+
+| ABOUT |
++-------+
+NXT++ is an interface written in C++ that allows the control LEGO MINDSTORMS robots
+directly through a USB connection. The interface is intended to be simple and easy
+to use. The interface can be used in any C++program.
+
++--------------+
+| REQUIREMENTS |
++--------------+
+1. A standard C++ compiler
+----FOR LINUX----
+2. libusb: http://libusb.sourceforge.net/
+-----------------
+3. The knowledge of basic compiling operations in your compiler
+
++-------------------+
+| WHERE TO GET HELP |
++-------------------+
+1. NXT++'s documentation (http://nxtpp.sourceforge.net/docs/index.html)
+2. NXT++ wiki (http://nxtpp.wetter61169.de/mediawiki-1.6.9/index.php/Main_Page)
+3. NXT++'s website (http://nxtpp.sourceforge.net)
+4. The example programs
+5. The source itself (NXT++.h)
+6. The NXT++ community (http://sourceforge.net/forum/?group_id=193451)
