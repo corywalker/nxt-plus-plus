@@ -1,0 +1,178 @@
+//----------------------------------------------------------------------------//
+//
+//  NXT++  v0.7  Demo 
+//
+//  David Butterworth, May 2012
+//
+//----------------------------------------------------------------------------//
+//
+// This demo will list the Device Name and MAC Address
+// of any NXT Bricks connected via Bluetooth or USB.
+//
+// You can this use this information to connect to your NXT.
+// Un-comment the appropriate block of code and edit the Device Name or
+// MAC Address.
+// The program will try to open a connection, output the device information to
+// console, then play a tone from the NXT.
+//
+// This version supports connection to multiple NXT Bricks, via Bluetooth,
+// or USB, or both simultaneously!
+//
+// There is also some example code for changing the Device Name of your Brick.
+//
+//
+// Note: Bluetooth can be buggy.
+//
+// The List NXT Devices function should list any BT devices,
+// but generally it only lists those that have already been paired.
+//
+// If ListNXTDevices does not return any devices, or if OpenNXTDevice doesc
+// not work, then un-pair the device, power cycle the NXT and your PC,
+// then re-pair the NXT with your PC.
+//
+//----------------------------------------------------------------------------//
+
+#include "stdafx.h"
+#include <iostream>
+#include <stdio.h>
+using namespace std;
+
+// NXT++ 0.6
+#include "nxtpp_07\include\NXT++.h"
+#pragma comment (lib, "nxtpp_07/lib/fantom.lib" )
+
+int main()
+{
+
+	printf( "Searching for NXT devices... (please wait) \n\n" );
+
+	// Get list of NXT Devices
+	// connected via Bluetooth or USB
+	//
+	// Note: This will only find Bluetooth devices that have
+	// been paired using the Windows BT Control Panel.
+	//
+	std::vector<std::vector<std::string> > devicelist;
+	devicelist = Comm::ListNXTDevices(true);
+					// false = only USB devices will be listed.
+					// true = list Bluetooth and USB devices.
+
+	printf( "Search complete! \n\n" );
+
+	// Iterate through NXT device list
+	// and output Device Name and
+	// MAC Address to console.
+	for (unsigned int i = 0; i < devicelist.size(); i++)
+	{
+		cout << "NXT Device " << i << "   Name: " << devicelist[i][0] << "   MAC Address: " << devicelist[i][1] << endl;
+	}
+	cout << "\n\n\n" << endl;
+
+
+	/*
+	// Un-comment this to connect to an NXT Device
+
+	Comm::NXTComm comm1;
+
+	// Try to connect to specific NXT Device
+	//
+	// The string name should be the Device Name
+	// or MAC Address without colon separators.
+	//
+	if ( NXT::OpenNXTDevice(&comm1, "0016530BD353", true) )
+					// false = only USB devices will be listed.
+					// true = list Bluetooth and USB devices.
+	{
+		printf( "\nConnected to brick... \n" );
+
+		// Get NXT device information
+		double protocol = NXT::GetProtocolVersion(&comm1);
+		double version = NXT::GetFirmwareVersion(&comm1);
+		int battery = NXT::BatteryLevel(&comm1);
+		string name = NXT::GetName(&comm1);
+
+		// Output information to console
+		printf( "Protocol version: %f \n", protocol ); // e.g. 1.124000 or 
+		printf( "Firmware version: %f \n", version ); // e.g. 1.280000 or 1.310000
+		printf( "Battery Level: %i \n", battery ); //e.g.  8198, or 6674 when battery low warning
+		printf( "Name: %s \n", name.data() ); // NXT device name
+
+		NXT::PlayTone  ( &comm1, 1000, 100 ); // Play high tone from NXT
+	}
+	
+	*/
+
+
+	/*
+	// Un-comment this to connect to a 2nd NXT Device
+	
+	Comm::NXTComm comm2;
+
+	// This will establish a connection with a 2nd NXT device
+	if ( NXT::OpenNXTDevice(&comm2, "NXT3", true) )
+	{
+		printf( "\nConnected to brick... \n" );
+
+		double protocol = NXT::GetProtocolVersion(&comm2);
+		double version = NXT::GetFirmwareVersion(&comm2);
+		int battery = NXT::BatteryLevel(&comm2);
+		string name = NXT::GetName(&comm2);
+
+		printf( "Protocol version: %f \n", protocol );
+		printf( "Firmware version: %f \n", version );
+		printf( "Battery Level: %i \n", battery );
+		printf( "Name: %s \n", name.c_str() );
+
+		NXT::PlayTone  ( &comm2, 500, 100 ); // Play low tone from NXT
+	}
+	
+	*/
+
+
+	/*
+	// Un-comment this to change NXT Device Name
+	//
+	// The safest is way is to connect one NXT via USB,
+	// and this code will set the Device Name for the
+	// first device that is found.
+	
+	Comm::NXTComm comm;
+
+	// Connect to first available NXT Device via USB
+	if( NXT::Open(&comm) )
+	{
+		printf( "\nConnected to brick... \n" );
+
+		// Get NXT device information
+		double version = NXT::GetFirmwareVersion(&comm);
+		string name = NXT::GetName(&comm);
+
+		// Output information to console
+		printf( "Current Device Name is: %s \n", name.c_str() );
+		printf( "Firmware version: %f \n", version );
+
+		printf( "\nSetting new Device Name... \n" );
+
+		// Change Device Name
+		char *newname;
+		newname = "NXT3";
+		NXT::SetName(&comm, newname);
+
+		name = NXT::GetName(&comm);
+		printf( "New Device Name is: %s \n", name.c_str() );
+
+	}
+
+	*/
+
+
+	/* 
+
+	// Tidy-up and close connect to NXT Device
+	//NXT::Close(&comm); //close the NXT
+
+	*/
+
+	return 0;
+}
+

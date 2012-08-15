@@ -1,0 +1,45 @@
+NEW FEATURES in v0.7
+--------------------
+
+David Butterworth, May 2012:
+
+
+NXT++ now supports multiple NXT bricks via USB and/or Bluetooth!
+
+Compatibility remains with earlier versions of NXT++.
+
+
+New functions:
+
+   std::vector<std::vector<std::string> > ListNXTDevices(bool searchBT);
+
+      Lists the Device Name and MAC Address of all NXT Devices connected 
+      via USB and Bluetooth.
+
+
+   bool OpenNXTDevice(std::string device, bool searchBT);
+
+      Opens a connection to a specific NXT Device, by providing either the 
+      Device Name or MAC Address.
+
+      Compatible with multiple NXT Devices!
+      You can open simultaneous connections to devices connected by both
+      USB or Bluetooth.
+
+
+Completed in this version:
+
+   std::string NXT::GetName(Comm::NXTComm* comm)
+   bool NXT::SetName(Comm::NXTComm* comm, char* name)
+
+      Read the Device Name of an NXT Brick, or
+      Set a new Device Name.
+
+      These functions are now fully implemented in this version.
+
+
+Fixed bugs:
+
+   double NXT::GetFirmwareVersion(Comm::NXTComm* comm)
+
+      Now returns the correct minor version number.

@@ -1,4 +1,8 @@
-#include "comm.h"
+
+#include "stdafx.h" 
+
+
+#include "..\include\comm.h"
 #include "time.h"
 
 
@@ -359,6 +363,273 @@ int NXTModule::writeIOMap(ViPByte buffer, int offset, int bytes)
 	return res;
 }
 
+// New in v0.7
+// David Butterworth, May 2012
+//
+// List NXT Devices
+// connected via Bluetooth or USB
+//
+// searchBT = false, only USB devices will be listed.
+// searchBT = true, list Bluetooth and USB devices.
+std::vector<std::vector<std::string>> Comm::ListNXTDevices(bool searchBT) 
+{ 
+	bool first = false;
+	char* tmp;
+	ViChar resourceName[256]; 
+	ViChar lastName[256]; 
+	int numDevices = 0;
+	std::string namestr;
+	std::string macstr;
+	std::vector<std::vector<std::string>> nxtdevices;
+
+	nxtIteratorPtr = nFANTOM100::iNXT::createNXTIterator(searchBT, 1, status ); 
+		// 1 = ignore timeout for Bluetooth discovery. If this is 0, search seems to hang.
+	if( status.isNotFatal()) { 
+		while(!first) { 
+			strcpy(lastName, resourceName);
+
+			// Grab resourceName, of the form:
+			// BTH::NXT1::00:16:53:01:16:E8::10
+			// for Bluetooth devices.
+			// Where NXT1 is the device name,
+			// and the MAC address is 12 digits.
+			// Not sure what last pair of digits are.
+			//
+			// USB0::0x0694::0x0002::00165312AF70::RAW
+			// for USB devices.
+			// Where Hardware IDS are VID = 0694, PID = 0002
+			// and MAC Address is 00165312AF70
+			// which can be found in "Device Instance Path" in Win7
+			nxtIteratorPtr->getName(resourceName, status);  
+
+			//printf("lastname:  %s \n", lastName);
+			//printf("resourceName:  %s \n", resourceName); 
+			
+			// If iterator goes past last bluetooth device,
+			// resourceName = lastName
+			if(!strcmp(lastName, resourceName)) { 
+				//printf("strcmp no match \n\n"); 
+				first = true; 
+
+			// else get device info
+			} else {
+				//printf("strcmp match \n\n"); 
+
+				//printf("status notfatal  %i \n", status.isNotFatal()); 
+
+				char macaddr[13] = {};
+
+				if ( status.isNotFatal() ) { //  >= 0
+					// get first token, which becomes resourceName ("BTH" or "USB0")
+					tmp = strtok(resourceName, "::"); 
+
+					// If first 3 chars in resourceName = "BTH"
+					if ( resourceName[0]==66 && resourceName[1]==84 && resourceName[2]==72 )
+					{
+						//printf("Found a Bluetooth device... \n\n");  
+						// Get 2nd token, which is the device name for Bluetooth only
+						tmp = strtok(NULL, "::"); 
+					    namestr.assign(tmp);
+						tmp = strtok(NULL, "::");
+
+						// Get next 6 tokens, which are the MAC Address
+						for (int i=0; i<=5; i++)
+						{
+							strcat(macaddr, tmp);
+							tmp = strtok(NULL, ":");
+						}
+						macstr.assign(macaddr);
+
+						//printf("NXT Device Name:  %s \n", namestr.data() );  
+						//printf("MAC Address:  %s \n", macstr.data() );
+
+						// Append Device name and MAC Address to our device list
+						nxtdevices.push_back( std::vector<std::string> () ); 
+						nxtdevices[numDevices].push_back( namestr.data() ); 
+						nxtdevices[numDevices].push_back( macstr.data() ); 
+
+
+					}
+					// Else if first 3 chars in resourceName = "USB"
+					//else if ( resourceName[0]==85 && resourceName[1]==83 && resourceName[2]==66 ) )
+					//
+					// lets just assume other devices are USB
+					else
+					{
+						//printf("Found a USB device \n\n"); 
+
+						// Split tokens from resourceName
+						tmp = strtok(NULL, "::"); 
+						tmp = strtok(NULL, "::");
+						// 4rth token is MAC Address
+						tmp = strtok(NULL, "::");
+						macstr.assign(tmp);
+
+						// For USB devices, the device name is not returned
+						// in resourceName, so we need to fetch it.
+						if( status.isNotFatal())
+						{
+							nxtPtr = nxtIteratorPtr->getNXT( status );
+							ViChar name[16];
+							ViByte bluetoothAddress[6];
+							ViUInt8 signalStrength[4];
+							ViUInt32 availableFlash;
+							nxtPtr->getDeviceInfo( name, bluetoothAddress, signalStrength, availableFlash, status );
+							name[15] = NULL;
+							namestr.assign(name);
+						}
+
+						//printf("NXT Device Name:  %s \n", namestr.data() );  
+						//printf("MAC Address:  %s \n", macstr.data() );
+
+						// Append Device name and MAC Address to our device list
+						nxtdevices.push_back( std::vector<std::string> () ); 
+						nxtdevices[numDevices].push_back( namestr.data() ); 
+						nxtdevices[numDevices].push_back( macstr.data() ); 
+					}
+					numDevices++;
+				}
+				nFANTOM100::iNXT::destroyNXT( nxtPtr );
+				nxtIteratorPtr->advance(status);
+			}
+		} 
+	}
+	nFANTOM100::iNXT::destroyNXTIterator( nxtIteratorPtr );
+
+	return nxtdevices;
+} 
+
+// New in v0.7
+// David Butterworth, May 2012
+//
+// Connect to NXT Device
+//
+// searchBT = false, only USB devices will be listed.
+// searchBT = true, list Bluetooth and USB devices.
+bool Comm::NXTComm::OpenNXTDevice(std::string device, bool searchBT) 
+{ 
+	bool first = false;
+	char* tmp;
+	ViChar resourceName[256]; 
+	ViChar lastName[256]; 
+	int numDevices = 0;
+	std::string namestr;
+	std::string macstr;
+
+	nxtIteratorPtr = nFANTOM100::iNXT::createNXTIterator(searchBT, 1, status ); 
+		// 1 = ignore timeout for Bluetooth discovery. If this is 0, search seems to hang.
+	if( status.isNotFatal()) { 
+		while(!first) { 
+			strcpy(lastName, resourceName);
+
+			// Grab resourceName ...
+			nxtIteratorPtr->getName(resourceName, status);  
+
+			//printf("lastname:  %s \n", lastName);
+			//printf("resourceName:  %s \n", resourceName); 
+			
+			// If iterator goes past last bluetooth device,
+			// resourceName = lastName
+			if(!strcmp(lastName, resourceName)) { 
+				//printf("strcmp no match \n\n"); 
+				first = true; 
+
+			// else get device info
+			} else {
+				//printf("strcmp match \n\n"); 
+
+				char macaddr[13] = {};
+
+				if ( status.isNotFatal() ) { //  >= 0
+					// get first token, which becomes resourceName ("BTH" or "USB0")
+					tmp = strtok(resourceName, "::"); 
+
+					// If first 3 chars in resourceName = "BTH"
+					if ( resourceName[0]==66 && resourceName[1]==84 && resourceName[2]==72 )
+					{
+						//printf("Found a Bluetooth device... \n\n");  
+						// Get 2nd token, which is the device name for Bluetooth only
+						tmp = strtok(NULL, "::"); 
+					    namestr.assign(tmp);
+						tmp = strtok(NULL, "::");
+
+						// Get next 6 tokens, which are the MAC Address
+						for (int i=0; i<=5; i++)
+						{
+							strcat(macaddr, tmp);
+							tmp = strtok(NULL, ":");
+						}
+						macstr.assign(macaddr);
+
+						if ( device.compare(namestr) == 0 || device.compare(macstr) == 0 )
+						{
+							//printf("Found device %s via Bluetooth. \n", device.data() );  
+							first = true;
+						}
+
+					}
+					// Else just assume other devices are USB
+					else
+					{
+						//printf("Found a USB device \n\n"); 
+
+						// Split tokens from resourceName
+						tmp = strtok(NULL, "::"); 
+						tmp = strtok(NULL, "::");
+						// 4th token is MAC Address
+						tmp = strtok(NULL, "::");
+						macstr.assign(tmp);
+
+						// For USB devices, the device name is not returned
+						// in resourceName, so we need to fetch it.
+						if( status.isNotFatal())
+						{
+							nxtPtr = nxtIteratorPtr->getNXT( status );
+							ViChar name[16];
+							ViByte bluetoothAddress[6];
+							ViUInt8 signalStrength[4];
+							ViUInt32 availableFlash;
+							nxtPtr->getDeviceInfo( name, bluetoothAddress, signalStrength, availableFlash, status );
+							name[15] = NULL;
+							namestr.assign(name);
+						}
+
+						//printf("NXT Device Name:  %s \n", namestr.data() );  
+						//printf("MAC Address:  %s \n", macstr.data() );
+
+						if ( device.compare(namestr) == 0 || device.compare(macstr) == 0 )
+						{
+							//printf("Found device %s via USB. \n", device.data() );  
+							first = true;
+						}
+
+					}
+					numDevices++;
+				}
+
+				// This gets executed once for each device found
+				nFANTOM100::iNXT::destroyNXT( nxtPtr );
+				// If device not found, lets try next NXT device
+				if (!first) 
+				{
+					nxtIteratorPtr->advance(status);
+				}
+			}
+		} 
+	}
+	
+	if( status.isNotFatal() ) { 
+		// Return NXT object
+		nxtPtr = nxtIteratorPtr->getNXT( status ); 
+		// Destroy the NXT iterator object which we no longer need 
+		nFANTOM100::iNXT::destroyNXTIterator( nxtIteratorPtr ); 
+	} else {
+		nFANTOM100::iNXT::destroyNXTIterator( nxtIteratorPtr );
+	}
+
+	return status.isNotFatal(); 
+} 
+
 // Searches for robots in the area and places their names in an array of strings
 void Comm::SearchBT(std::vector<std::string> *names) 
 { 
@@ -387,20 +658,21 @@ void Comm::SearchBT(std::vector<std::string> *names)
 	nFANTOM100::iNXT::destroyNXTIterator( nxtIteratorPtr );
 } 
 
+// Connect to first NXT Device that is found
+// via USB.
 bool Comm::NXTComm::Open()
 {
 	// Create an NXT iterator object which is used to find all accessible NXT devices.
 	nxtIteratorPtr = nFANTOM100::iNXT::createNXTIterator(
-		false /* don't search for NXTs over Bluetooth (only search USB) */,
-		1 /* timeout for Bluetooth discovery ignored */, status );
+		false, // false = only search USB for NXTs
+		1, // timeout for Bluetooth discovery ignored 
+		status );
 
 	// Creating the NXT iterator object could fail, better check status before dereferencing a
 	//    potentially NULL pointer.
 	if( status.isNotFatal())
 	{
-		// Create an NXT object for the first NXT that was found.  Note that if a NXT is found
-		//    over BT, the computer and the NXT must be paired before an NXT object can be
-		//    created.  This can be done programatically using the iNXT::pairBluetooth method.
+		// Create an NXT object for the first NXT that was found.  
 		nxtPtr = nxtIteratorPtr->getNXT( status );
 
 		// Destroy the NXT iterator object which we no longer need
@@ -409,20 +681,23 @@ bool Comm::NXTComm::Open()
 	return status.isNotFatal();
 }
 
+// Connect to first NXT Device that is found
+// via Bluetooth or USB.
+// Note: the computer and NXT must be paired before this will work.  
+// This can be done programatically using the iNXT::pairBluetooth method.
 bool Comm::NXTComm::OpenBT()
 {
 	// Create an NXT iterator object which is used to find all accessible NXT devices.
 	nxtIteratorPtr = nFANTOM100::iNXT::createNXTIterator(
-		true /* don't search for NXTs over Bluetooth (only search USB) */,
-		1 /* timeout for Bluetooth discovery ignored */, status );
+		true, // true = search Bluetooth and USB
+		1, // timeout for Bluetooth discovery ignored
+		status );
 			
 	// Creating the NXT iterator object could fail, better check status before dereferencing a
 	// potentially NULL pointer.
 	if( status.isNotFatal())
 	{
-		// Create an NXT object for the first NXT that was found.  Note that if a NXT is found
-		//    over BT, the computer and the NXT must be paired before an NXT object can be
-		//    created.  This can be done programatically using the iNXT::pairBluetooth method.
+		// Create an NXT object for the first NXT that was found.  
 		nxtPtr = nxtIteratorPtr->getNXT( status );
 
 		// Destroy the NXT iterator object which we no longer need
@@ -431,6 +706,13 @@ bool Comm::NXTComm::OpenBT()
 	return status.isNotFatal();
 }
 
+// Connect to NXT Device with specific MAC Address
+// via Bluetooth or USB.
+//
+// Example code:
+//		char *device;
+//		device = "00165312AF11";
+//		if( NXT::OpenBT(&comm1, device) );
 bool Comm::NXTComm::OpenBT(char * name) 
 { 
 	bool first = false; 
@@ -487,16 +769,28 @@ double Comm::NXTComm::GetProtocolVersion()
 	return version;
 }
 
+// Get the firmware version number
+//
+// Modified by David
+//  this was returning  1.310000 for v1.31
+// but returning 1.100000  for v1.01
+//
 double Comm::NXTComm::GetFirmwareVersion()
 {
 	ViUInt8 protocolVersionMajor, protocolVersionMinor, firmwareVersionMajor, firmwareVersionMinor;
 	nxtPtr->getFirmwareVersion( protocolVersionMajor, protocolVersionMinor, firmwareVersionMajor, firmwareVersionMinor, status );
 	double version = firmwareVersionMinor;
 	while(version >= 1)
-		version /= 10;
+		//version /= 10;
+		version /= 100; // Displays correct version number
 	version += firmwareVersionMajor;
 	return version;
 }
+
+
+
+
+
 
 std::string Comm::NXTComm::GetName()
 {
@@ -508,12 +802,16 @@ std::string Comm::NXTComm::GetName()
 	name[15] = NULL;
 	return (std::string)name;
 }
+
+
 // Sets the name of the nxt
 bool Comm::NXTComm::SetName(char* name) {
 	ViConstString newName = name;
 	nxtPtr->setName(newName, status);
 	return status.isNotFatal();
 }
+
+
 //! Returns the amount of flash memory left
 double Comm::NXTComm::GetAvailableFlash()
 {

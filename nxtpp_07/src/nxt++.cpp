@@ -1,4 +1,7 @@
-#include "NXT++.h"
+
+#include "stdafx.h" 
+
+#include "..\include\NXT++.h"
 
 using namespace NXT;
 using namespace NXT::File;
@@ -12,9 +15,21 @@ bool NXT::Open(Comm::NXTComm* comm)
 	return comm->Open();
 }
 
+// New in v0.7
+// David Butterworth, May 2012
+bool NXT::OpenNXTDevice(Comm::NXTComm* comm, std::string device, bool searchBT)
+{
+	return (bool)comm->OpenNXTDevice(device, searchBT);
+}
+
 bool NXT::OpenBT(Comm::NXTComm* comm)
 {
 	return comm->OpenBT();
+}
+
+bool NXT::OpenBT(Comm::NXTComm* comm, char * name)
+{
+	return comm->OpenBT(name);
 }
 
 void NXT::Close(Comm::NXTComm* comm)
@@ -66,6 +81,17 @@ double NXT::GetFirmwareVersion(Comm::NXTComm* comm)
 	return comm->GetFirmwareVersion();
 }
 
+// New in v0.7
+// David Butterworth, May 2012
+std::string NXT::GetName(Comm::NXTComm* comm)
+{
+	return (std::string)comm->GetName();
+}
+bool NXT::SetName(Comm::NXTComm* comm, char* name)  // Comm::NXTComm* comm
+{
+	return (bool)comm->SetName(name);
+}
+
 void NXT::StartProgram(Comm::NXTComm* comm, std::string name)
 {
 	char fname[20];
@@ -105,8 +131,6 @@ void NXT::KeepAlive(Comm::NXTComm* comm)
 	ViUInt8 directCommandBuffer[] = { 0x0D };
 	comm->SendDirectCommand( false, reinterpret_cast< ViByte* >( directCommandBuffer ), sizeof( directCommandBuffer ), NULL, 0);
 }
-
-
 
 //
 int NXT::Motor::GetRotationCount(Comm::NXTComm* comm, int port)

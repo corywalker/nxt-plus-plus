@@ -11,14 +11,19 @@
 // 04/26/2007   maddock     Header comments
 // 05/12/2007   phyizal     Added fantom file support
 // 05/16/2007   phyizal     Removed fantom function call 
+// May 2012     David Butterworth   commented additions
 
 #include <stdlib.h>
 #include <string.h>
 #include <vector>
 #include <iostream>
-#include "fantom/iNXT.h"
-#include "fantom/iNXTIterator.h"
-#include "fantom/tStatus.h"
+#include "fantom\iNXT.h"
+#include "fantom\iNXTIterator.h"
+#include "fantom\tStatus.h"
+
+
+//#include "fantom/.h"
+
 
 //Error codes.
 //TODO: Make them more comprehensive based on status code from NXT.
@@ -190,6 +195,10 @@ namespace Comm
 {
 	void SearchBT(std::vector<std::string> *names);
 
+	// New in v0.7
+	// David Butterworth, May 2012
+	std::vector<std::vector<std::string> > ListNXTDevices(bool searchBT);
+
 	class NXTComm {
 	public:
 		// global variable
@@ -217,6 +226,11 @@ namespace Comm
 		/*! Returns true if it completed without error. Returns false if it failed. You should not continue to
 		use the interface functions if this happens. Refer to example.cpp for info on how to properly handle this.*/
 		bool OpenBT(char * name);
+
+		// New in v0.7
+		// David Butterworth, May 2012
+		bool OpenNXTDevice(std::string device, bool searchBT);
+
 		//! Closes the NXT connection.
 		void Close();
 		//! Sends a direct command to the NXT.
