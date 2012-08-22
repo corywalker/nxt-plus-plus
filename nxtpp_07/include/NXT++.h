@@ -11,6 +11,7 @@
 // -------------------------------------------------------------------------
 // 04/26/2007   maddock     OS specific includes, comment headers
 // 05/16/2007   phyizal     Removed fantom function call 
+// May 2012     David Butterworth   commented additions
 
 #include "comm.h"
 
@@ -57,6 +58,18 @@ namespace NXT
 	use the interface functions if this happens. Refer to example.cpp for info on how to properly handle this.
 	Does not work with linux yet.*/
 	bool OpenBT(Comm::NXTComm* comm);
+	bool OpenBT(Comm::NXTComm* comm, char * name);
+
+	// New in v0.7
+	// David Butterworth, May 2012
+	//
+	// Open connection to NXT.
+	// Using Device Name or MAC Address,
+	// supports multiple USB or Bluetooth devices.
+	bool OpenNXTDevice(Comm::NXTComm* comm, std::string device, bool searchBT);
+	// Set the name of the NXT
+	bool SetName(Comm::NXTComm* comm, char* name); 
+
 	//! Closes the NXT connection.
 	void Close(Comm::NXTComm* comm);
 	//! Plays a tone.
@@ -65,9 +78,11 @@ namespace NXT
 	//! Returns the current battery level.
 	/*! \return The current battery level in millivolts.*/
 	int BatteryLevel(Comm::NXTComm* comm);
+
 	//! Gets the name of the NXT.
 	/*! \return The name of the NXT.*/
 	std::string GetName(Comm::NXTComm* comm);
+
 	//! Gets the amount of availiable flash memory on the NXT.
 	/*! Does not work with linux yet. \return The amount of free flash memory in kilobytes.*/
 	double GetAvailableFlash(Comm::NXTComm* comm);
